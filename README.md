@@ -41,8 +41,10 @@ A implementação prática foi dividida em três experimentos de código (Códig
 Neste primeiro experimento, a imagem foi tratada como uma matriz de intensidades para análise de frequência espacial.
 
 - **Pré-processamento:** Conversão para escala de cinza e detecção de bordas com filtro Canny.
-- **Adidas (Métrica de Picos):** A matriz de bordas foi rotacionada e somada ao longo do eixo vertical para gerar um histograma de projeção. O algoritmo busca por picos locais (máximos locais) nesse histograma. **Critério:** Se o sinal apresentar 3 picos proeminentes com espaçamento regular (periodicidade), a imagem é classificada como Adidas.
-- **Converse (Razão Estatística):** Calculou-se a dispersão dos pixels brancos nos eixos X e Y (StdX e StdY). **Critério:** Se a razão StdY/StdX for próxima de 1.0 (indicando uma forma "quadrada" ou circular, típica do logo ou do cano alto), classifica-se como Converse.
+- **Adidas (Métrica de Picos):** A matriz de bordas foi rotacionada e somada ao longo do eixo vertical para gerar um histograma de projeção. O algoritmo busca por picos locais (máximos locais) nesse histograma.
+    - **Critério:** Se o sinal apresentar 3 picos proeminentes com espaçamento regular (periodicidade), a imagem é classificada como Adidas.
+- **Converse (Razão Estatística):** Calculou-se a dispersão dos pixels brancos nos eixos X e Y (StdX e StdY).
+    -  **Critério:** Se a razão StdY/StdX for próxima de 1.0 (indicando uma forma "quadrada" ou circular, típica do logo ou do cano alto), classifica-se como Converse.
 - **Nike:** Classificação por exclusão (padrões irregulares).
 
 ### 4.2. Código 02: Excentricidade e Componentes Conexos
@@ -50,7 +52,10 @@ Neste primeiro experimento, a imagem foi tratada como uma matriz de intensidades
 Esta versão focou em simplificar a imagem para formas binárias puras.
 
 - **Pré-processamento:** Binarização direta.
-- **Métricas:** -`ecc` (Excentricidade): Mede o alongamento da elipse que melhor se ajusta ao objeto (0 = círculo, 1 = linha). -`components` (número de regiões): Número de regiões brancas separadas na imagem. -`orient_score` (orientação dos gradientes): Medida da orientação predominante dos gradientes.
+- **Métricas:**
+    - `ecc` (Excentricidade): Mede o alongamento da elipse que melhor se ajusta ao objeto (0 = círculo, 1 = linha).
+    - `components` (número de regiões): Número de regiões brancas separadas na imagem.
+    - `orient_score` (orientação dos gradientes): Medida da orientação predominante dos gradientes.
 - **Decisão:**
     - **Adidas:** `components >= 3` e orientação diagonal forte (`orient_score > 0.15`), ssume-se que os componentes são as listras separadas.
     - **Nike:** `ecc > 3.0`, classifica-se como Nike (objeto muito fino e alongado, típico de tênis de corrida de perfil baixo)..
@@ -61,10 +66,15 @@ Esta versão focou em simplificar a imagem para formas binárias puras.
 A abordagem final corrigiu a instabilidade dos códigos anteriores implementando "filtros de sanidade" mais rigorosos.
 
 - **Pré-processamento Avançado:**
-  -Crop de Segurança (5%) para remover molduras.
-  -Gamma Correction (1.5) para realçar listras claras em tênis brancos.
-  -Inversão Inteligente da máscara binária.
-- **Algoritmo de Detecção:** -**Binarização por Limiarização Global (Otsu):** O algoritmo calcula o histograma da imagem e encontra o limiar ($T$) que minimiza a variância dentro de cada classe (fundo e objeto). -**Refinamento Morfológico (Fechamento):** O fechamento serve para conectar pequenos pontos que deveriam estar juntos, mas foram separados por ruído ou reflexos na foto. -**Detecção de Bordas via Gradiente (Sobel):** Como a imagem é binária após o Otsu, o gradiente será máximo exatamente na transição entre o logo e o tênis, gerando um contorno de 1 pixel de espessura que delimita perfeitamente as marcas. -**Análise de Componentes Conectados e Centros de Massa:** O algoritmo percorre a matriz procurando grupos de pixels brancos vizinhos (8-conectividade). Para cada grupo (listra), calculamos o Momento de Ordem Zero (área) e os Momentos de Primeira Ordem (centroide/centro de massa). **Validação:** A prova final de que é um logo Adidas ocorre quando o algoritmo detecta três componentes cujos centros de massa estão alinhados e cujas áreas são estatisticamente semelhantes.
+  - Crop de Segurança (5%) para remover molduras.
+  - Gamma Correction (1.5) para realçar listras claras em tênis brancos.
+  - Inversão Inteligente da máscara binária.
+- **Algoritmo de Detecção:**
+    - **Binarização por Limiarização Global (Otsu):** O algoritmo calcula o histograma da imagem e encontra o limiar ($T$) que minimiza a variância dentro de cada classe (fundo e objeto).
+    - **Refinamento Morfológico (Fechamento):** O fechamento serve para conectar pequenos pontos que deveriam estar juntos, mas foram separados por ruído ou reflexos na foto.
+    - **Detecção de Bordas via Gradiente (Sobel):** Como a imagem é binária após o Otsu, o gradiente será máximo exatamente na transição entre o logo e o tênis, gerando um contorno de 1 pixel de espessura que delimita perfeitamente as marcas.
+    - **Análise de Componentes Conectados e Centros de Massa:** O algoritmo percorre a matriz procurando grupos de pixels brancos vizinhos (8-conectividade). Para cada grupo (listra), calculamos o Momento de Ordem Zero (área) e os Momentos de Primeira Ordem (centroide/centro de massa).
+        - **Validação:** A prova final de que é um logo Adidas ocorre quando o algoritmo detecta três componentes cujos centros de massa estão alinhados e cujas áreas são estatisticamente semelhantes.
 
 ---
 
@@ -107,7 +117,8 @@ Foi gravado um vídeo demonstrativo explicando a lógica do código, as dificuld
 
 ## 8. Dificuldades Encontradas
 
-- **Generalização e Unificação do Código (O Maior Desafio):** A maior dificuldade encontrada foi criar um único algoritmo com um conjunto fixo de parâmetros que funcionasse para todas as imagens. Percebemos que os parâmetros ideais para segmentar um tênis Adidas (ex: um limiar de contraste alto para pegar listras) eram prejudiciais para a detecção do Nike (que exigia suavização para ignorar texturas). -**Consequência:** Ao tentar ajustar o código para corrigir o erro em uma imagem específica, frequentemente "quebrávamos" a classificação de outra imagem que já estava correta. Isso nos obrigou a criar ramificações lógicas complexas (if/else) baseadas em tentativas e erros, tratando quase cada caso de forma isolada, em vez de ter um modelo verdadeiramente genérico.
+- **Generalização e Unificação do Código (O Maior Desafio):** A maior dificuldade encontrada foi criar um único algoritmo com um conjunto fixo de parâmetros que funcionasse para todas as imagens. Percebemos que os parâmetros ideais para segmentar um tênis Adidas (ex: um limiar de contraste alto para pegar listras) eram prejudiciais para a detecção do Nike (que exigia suavização para ignorar texturas).
+    - **Consequência:** Ao tentar ajustar o código para corrigir o erro em uma imagem específica, frequentemente "quebrávamos" a classificação de outra imagem que já estava correta. Isso nos obrigou a criar ramificações lógicas complexas (if/else) baseadas em tentativas e erros, tratando quase cada caso de forma isolada, em vez de ter um modelo verdadeiramente genérico.
 
 - **Sensibilidade da Transformada de Hough:** O algoritmo detectou "listras" onde não existiam (como costuras, cadarços ou sombras no chão). Foi necessário implementar filtros matemáticos rigorosos (cálculo de desvio padrão dos ângulos) para diferenciar o que era uma listra da marca Adidas de um ruído aleatório.
 
